@@ -6,31 +6,30 @@ import PostList from './components/PostList';
 import MyButton from './components/UI/button/MyButton';
 import MyModal from './components/UI/modal/MyModal';
 import { usePosts } from './hooks/usePosts';
+import { useFetching } from './hooks/useFetching';
 import './styles/App.css';
 import PostService from './API/PostService';
 import Loader from './loader/Loader';
+import { getPageCount } from './utils/pages';
 
 function App() {
-  const [posts, setPosts] = useState([
-   /*  {id: 1, title: 'Javascript', body: 'Description'},
-    {id: 2, title: 'JS', body: 'Descrip'},
-    {id: 3, title: 'Typescript', body: 'Des'} */
-  ])
+  const [posts, setPosts] = useState([])
   const [filter, setFilter] = useState({sort: '', query: ''})
   const [modal, setModal] = useState(false)
+  const [totalPages, setTotalPages] = useState(0)
+  const [limit, setLimit] = useState(10)
+  const [page, setPage] = useState(1)
   const sortedAndSearchedPosts = usePosts(posts, filter.sort, filter.query)
-  const [isPostsLoading, setIsPostsLoading] = useState(false)
+  const [fetchPosts, isPostsLoading, postError] = useFetching(async () => {
+      const response = await PostService.getAll(limit, page)
+      setPosts(response.data)
+      const totalCount = response.headers['x-total-count']
+      setTotalPages(getPageCount(totalCount, limit))
+  })
 
   useEffect(() => {
     fetchPosts()
   }, [])
-
-  async function fetchPosts() {
-    setIsPostsLoading(true)
-    const posts = await PostService.getAll()
-    setPosts(posts)
-    setIsPostsLoading(false)
-  }
   
   const createPost = (newPost) => {
     setPosts([...posts, newPost])
@@ -56,11 +55,13 @@ return (
         filter={filter}
         setFilter={setFilter}
       />
+      {postError &&
+        <h1>Error ${postError}</h1>
+      }
       {isPostsLoading
         ? <div style={{display: 'flex', justifyContent: 'center', marginTop: 50}}><Loader /></div>
         : <PostList remove={removePost} posts={sortedAndSearchedPosts} title='Posts'/>
       }
-      
       <ClassCounter />
     </div>
   );
