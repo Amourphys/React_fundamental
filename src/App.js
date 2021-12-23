@@ -11,6 +11,7 @@ import './styles/App.css';
 import PostService from './API/PostService';
 import Loader from './loader/Loader';
 import { getPageCount } from './utils/pages';
+import Pagination from './components/UI/pagination/Pagination';
 
 function App() {
   const [posts, setPosts] = useState([])
@@ -20,6 +21,7 @@ function App() {
   const [limit, setLimit] = useState(10)
   const [page, setPage] = useState(1)
   const sortedAndSearchedPosts = usePosts(posts, filter.sort, filter.query)
+  
   const [fetchPosts, isPostsLoading, postError] = useFetching(async () => {
       const response = await PostService.getAll(limit, page)
       setPosts(response.data)
@@ -29,15 +31,19 @@ function App() {
 
   useEffect(() => {
     fetchPosts()
-  }, [])
+  }, [page])
   
   const createPost = (newPost) => {
     setPosts([...posts, newPost])
     setModal(false)
   }
-
+  // Получаем пост из дочернего компонента
   const removePost = (post) => {
     setPosts(posts.filter(p => p.id !== post.id))
+  }
+
+  const changePage = (page) => {
+    setPage(page)
   }
  
 return (
@@ -49,7 +55,6 @@ return (
       <MyModal visible={modal} setVisible={setModal}>
         <PostForm create={createPost}/>
       </MyModal>
-      
       <hr style={{margin: '15px 0'}}/>
       <PostFilter 
         filter={filter}
@@ -62,6 +67,7 @@ return (
         ? <div style={{display: 'flex', justifyContent: 'center', marginTop: 50}}><Loader /></div>
         : <PostList remove={removePost} posts={sortedAndSearchedPosts} title='Posts'/>
       }
+      <Pagination page={page} changePage={changePage} totalPages={totalPages} />
       <ClassCounter />
     </div>
   );
